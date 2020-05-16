@@ -9,6 +9,7 @@ verify_ssl = true
 pandas = "*"
 requests = "*"
 beautifulsoup4 = "*"
+pyinquirer = "*"
 
 [requires]
 python_version = "3.8"
