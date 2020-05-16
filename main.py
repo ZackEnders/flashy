@@ -7,11 +7,12 @@ from PyInquirer import style_from_dict, Token, prompt, Separator
 from examples import custom_style_2
 import webbrowser
 
-data = {"techcrunch": {"posts": []}, "coronavirus": {"posts": []}}
+# data = {"techcrunch": {"posts": []}, "coronavirus": {"posts": []}}
+data = []
 
 
 def get_news_type(answers):
-    switcher = {"Tech": ["Techcrunch", "Wired", "Suprise Me!"]}
+    switcher = {"Tech": ["TechCrunch", "HackerNews", "TheVerge", "Suprise Me!"]}
     return switcher.get(answers["news_type"])
 
 
@@ -24,14 +25,14 @@ def getSoupData(URL):
 def buildTechcrunchJSON():
     site_data = {
         "site_name": "techcrunch",
-        "URL": "https://techcrunch.com/",
+        "url": "https://techcrunch.com/",
         "posts_container": "river",
         "post_blocks": "post-block",
         "title": "post-block__title__link",
         "href": "post-block__title__link",
         "description": "post-block__content",
     }
-    soup = getSoupData(site_data["URL"])
+    soup = getSoupData(site_data["url"])
     container = soup.find(class_=site_data["posts_container"])
     post_blocks = container.find_all(class_=site_data["post_blocks"])
 
@@ -39,9 +40,52 @@ def buildTechcrunchJSON():
         title = post_block.find(class_=site_data["title"]).text.strip()
         href = post_block.find("a", class_=site_data["href"])["href"]
         description = post_block.find(class_=site_data["description"]).text.strip()
-        # blob = {"name": title}
         blob = {"name": title, "href": href, "description": description}
-        data[site_data["site_name"]]["posts"].append(blob)
+        data.append(blob)
+
+
+def getHackerNews():
+    site_data = {
+        "site_name": "hackernews",
+        "url": "https://thehackernews.com/",
+        "posts_container": "blog-posts",
+        "post_blocks": "body-post",
+        "title": "home-title",
+        "href": "story-link",
+        "description": "home-desc",
+    }
+    soup = getSoupData(site_data["url"])
+    container = soup.find(class_=site_data["posts_container"])
+    post_blocks = container.find_all(class_=site_data["post_blocks"])
+
+    for post_block in post_blocks:
+        title = post_block.find(class_=site_data["title"]).text.strip()
+        href = post_block.find("a", class_=site_data["href"])["href"]
+        description = post_block.find(class_=site_data["description"]).text.strip()
+        blob = {"name": title, "href": href, "description": description}
+        data.append(blob)
+
+
+def getTheVerge():
+    site_data = {
+        "site_name": "TheVerge",
+        "url": "https://www.theverge.com/",
+        "posts_container": "c-compact-river",
+        "post_blocks": "c-compact-river__entry",
+        "title": "c-entry-box--compact__title",
+        "href": "",
+        "description": "",
+    }
+    soup = getSoupData(site_data["url"])
+    container = soup.find(class_=site_data["posts_container"])
+    post_blocks = container.find_all(class_=site_data["post_blocks"])
+
+    for post_block in post_blocks:
+        title = post_block.find(class_=site_data["title"]).find("a").text.strip()
+        href = post_block.find(class_=site_data["title"]).find("a")["href"]
+        description = post_block.find(class_=site_data["description"]).text.strip()
+        blob = {"name": title, "href": href, "description": description}
+        data.append(blob)
 
 
 questions = [
@@ -60,8 +104,13 @@ questions = [
 ]
 
 answers = prompt(questions, style=custom_style_2)
-fetchData = {"Techcrunch": buildTechcrunchJSON()}
-fetchData.get(answers["news_site"])
+pprint(answers)
+fetchData = {
+    "TechCrunch": buildTechcrunchJSON,
+    "HackerNews": getHackerNews,
+    "TheVerge": getTheVerge,
+}
+fetchData.get(answers["news_site"])()
 
 sites = [
     {
@@ -69,14 +118,14 @@ sites = [
         "qmark": "😃",
         "name": "selected_sites",
         "message": "Select articles",
-        "choices": data["techcrunch"]["posts"],
+        "choices": data,
     },
 ]
 
 open_sites = prompt(sites, style=custom_style_2)
 print(open_sites)
 
-for post in data["techcrunch"]["posts"]:
+for post in data:
     should_open = post["name"] in open_sites["selected_sites"]
     if should_open:
         webbrowser.open_new_tab(post["href"])
